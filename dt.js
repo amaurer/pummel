@@ -1,8 +1,10 @@
 
 
 var request = require('request'),
-	$ = require('jquery');
-
+	$ = require('jquery'),
+	compress = require('./node_modules/node-compress/compress'),
+	gunzip = new compress.Gunzip;
+	gunzip.init();
 
 var i = 0, len = 1;
 
@@ -23,21 +25,21 @@ function startSession(sessionID){
 			body : ''
 	};
 	
-	var s = 'http://joemyerstoyota.oemlr.com/';
+	var s = 'http://demo.oemlr.com/';
 		
 	requestObject.uri = s;
 	request(requestObject, function(e, x, d){
 
 		console.log(sessionID + ' - ' + s);
 		
-		s = 'http://joemyerstoyota.oemlr.com/select/?tireSize=205/55R16';
+		s = 'http://demo.oemlr.com/select/?tireSize=205/55R16';
 		requestObject.uri = s;
 		requestObject.headers.Cookie = getCookieString(x); /* Sets Session */
 		request(requestObject, function(e, x, d){
 			
 			console.log(sessionID + ' - ' + s);
 			
-			s = 'http://joemyerstoyota.oemlr.com/?resource=selectProductSubmissionRequest';
+			s = 'http://demo.oemlr.com/?resource=selectProductSubmissionRequest';
 			requestObject.uri = s;
 			requestObject.method = 'POST';
 			requestObject.body = getProductSelectionXML();
@@ -45,7 +47,11 @@ function startSession(sessionID){
 			requestObject.headers['Accept'] = 'text/xml';
 			request(requestObject, function(e, x, d){
 
-				console.log(x, d);
+				console.log(d);
+				var data = gunzip.inflate(d, "UFT-8");
+				console.log(data);
+				process.exit();
+				
 				console.log(sessionID + ' - ' + s);
 						
 				s = 'http://joemyerstoyota.oemlr.com/schedule/?tireSize=205/55R16';
