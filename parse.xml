@@ -1,0 +1,14 @@
+<selectProductSubmissionRequest>
+	<productAttributes>
+		<product>
+			<productID>366</productID>
+			<productSKU>DT31538</productSKU>
+			<productPosition></productPosition>
+			<quantity>4</quantity>
+			<productGroupID>0</productGroupID>
+		</product>
+		<tireAttributes>
+			<tireSize>205/55R16</tireSize>
+		</tireAttributes>
+	</productAttributes>
+</selectProductSubmissionRequest>
