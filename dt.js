@@ -1,10 +1,7 @@
 
 
 var request = require('request'),
-	$ = require('jquery'),
-	compress = require('./node_modules/node-compress/compress'),
-	gunzip = new compress.Gunzip;
-	gunzip.init();
+	$ = require('jquery');
 
 var i = 0, len = 1;
 
@@ -13,20 +10,36 @@ for (i=0; i < len; i++) {
 }
 
 
+function RequestDefaultObject(){
+	return {
+		uri : '',
+		method : '',
+		body : '',
+		headers : {
+			'User-Agent' : 'Mozilla/5.0 (X11; Linux x86_64; rv:5.0) Gecko/20100101 Firefox/5.0',
+			'Accept' : 'text/html'
+		},
+		next : null
+	};
+};
+
 function startSession(sessionID){
 	
-	var requestObject = {
-			uri : '',
-			method : 'GET',
-			headers : {
-				'User-Agent' : 'Mozilla/5.0 (X11; Linux x86_64; rv:5.0) Gecko/20100101 Firefox/5.0',
-				'Accept' : 'text/html'
-			},
-			body : ''
+	
+	function executeRequest(ro){
+		request(requestObject, function(e, x, d){
+			if(e !== null) throw e;
+			if(typeof ro.next !== 'undefinded' && ro.next !== null){
+				ro.next.headers.Cookie = getCookieString(x);
+				if(typeof ro.next.body === 'Function') ro.next.body = ro.next.body(d);
+				executeRequest(ro.next);
+			};
+		});
 	};
 	
-	var s = 'http://demo.oemlr.com/';
-		
+	
+	
+	
 	requestObject.uri = s;
 	request(requestObject, function(e, x, d){
 
@@ -43,30 +56,28 @@ function startSession(sessionID){
 			requestObject.uri = s;
 			requestObject.method = 'POST';
 			requestObject.body = getProductSelectionXML();
-			requestObject.headers['Content-Type'] = 'application/xml';
-			requestObject.headers['Accept'] = 'text/xml';
 			request(requestObject, function(e, x, d){
 
-				console.log(d);
-				var data = gunzip.inflate(d, "UFT-8");
-				console.log(data);
-				process.exit();
-				
 				console.log(sessionID + ' - ' + s);
 						
-				s = 'http://joemyerstoyota.oemlr.com/schedule/?tireSize=205/55R16';
-				delete requestObject.headers['Content-Type'];
-				requestObject.method = 'GET';
-				requestObject.headers['Accept'] = 'text/html';
-				requestObject.uri = s;
-				requestObject.body = '';
-				request(requestObject, function(e, x, d){
+				s = 'http://demo.oemlr.com/schedule/?tireSize=205/55R16';
+				var ro = {
+						uri : s,
+						method : 'GET',
+						headers : {
+							'User-Agent' : 'Mozilla/5.0 (X11; Linux x86_64; rv:5.0) Gecko/20100101 Firefox/5.0',
+							'Accept' : 'text/html',
+							Cookie : requestObject.headers.Cookie
+						},
+						body : ''
+				};
+				request(ro, function(e, x, d){
 					
-					console.log('done');
-					console.log(d);
-					process.exit();
-					return;
-					console.log(e);
+					var leadID = s.search(/leadid/gi);
+					
+					
+					console.log(leadID);
+					//console.log(d);
 					
 				});
 				
