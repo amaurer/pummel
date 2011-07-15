@@ -9,13 +9,13 @@ var args = process.argv,
 	spawn = require('child_process').spawn,
 	request = require('request'),
 	aProcesses = [],
-	i = 0, len = 0,x = '', p = process;
+	i = 0, len = 0, x = '', p = process;
 
 if(argsLen === 3){
 	len = 1;
 } else if(argsLen === 4 && Number(args[3]) !== 'NaN'){
 	len = Number(args[3]);
-}
+};
 
 for (i=0; i<len; i++) {
 	aProcesses.push(spawn('node', [args[2]]));
@@ -23,7 +23,7 @@ for (i=0; i<len; i++) {
 	x.stdout.on('data', handler);
 	x.stderr.on('data', errorHandler);
 	x.on('exit', exitHandler);
-}
+};
 
 function handler(d){
 	console.log('Data', d.toString());
@@ -37,16 +37,36 @@ function exitHandler(){
 	
 
 /* Public */
-exports.go = function(threadRequestObjects){
-	executeRequest(threadRequestObjects);
+exports.go = function(threadRequestArray){
+	for(var trArrayLen = threadRequestArray.length, ro = null, ref = null, roFinal = {}; i<trArrayLen; i++){
+		ro = threadRequestArray[i];
+		if(i === 0){
+			roFinal = ref = ro;
+		} else {
+			ref = ref.next = ro;
+		};
+	};
+	executeRequest(roFinal);
 	function executeRequest(ro){
+		console.log(ro);
 		request(ro, function(e, x, d){
+			var body = '';
 			if(e !== null) throw e;
 			console.log(x.statusCode);
+			if(typeof ro.onRequestEnd === 'function'){
+				ro.onRequestEnd.apply(ro, arguments);
+			};
 			if(typeof ro.next !== 'undefinded' && ro.next !== null){
-				ro.next.headers.Cookie = exports.getCookieString(x);
-				console.log(typeof ro.next.body, ' body check');
-				if(typeof ro.next.body === 'function') ro.next.body = ro.next.body(d);
+				/* Prep Cookie */
+				if(typeof x.headers['set-cookie'] !== 'undefined'){
+					ro.next.headers.Cookie = exports.getCookieString(x);
+				} else if(typeof ro.headers.Cookie !== 'undefined'){
+					ro.next.headers.Cookie = ro.headers.Cookie;
+				}
+				if(typeof ro.next.onRequestStart === 'function'){
+					body = ro.next.onRequestStart.apply(ro.next, arguments);
+					if(body !== null) ro.next.body = body;
+				};
 				executeRequest(ro.next);
 			};
 		});
@@ -56,6 +76,8 @@ exports.go = function(threadRequestObjects){
 exports.RequestObject = function(requestType){
 	this.uri = '';
 	this.method = requestType;
+	this.onRequestEnd = null;
+	this.onRequestStart = null;
 	if(typeof requestType !== 'undefined' && requestType.toUpperCase() === 'POST') this.body = '';
 	this.headers = {
 		'User-Agent' : 'Mozilla/5.0 (X11; Linux x86_64; rv:5.0) Gecko/20100101 Firefox/5.0',
@@ -67,7 +89,6 @@ exports.RequestObject = function(requestType){
 exports.getCookieString = function(x){
 	
 	var i = 0, len = 0, x, a = [];
-
 	for (i = 0, len = x.headers['set-cookie'].length; i < len; i++) {
 		a.push(x.headers['set-cookie'][i].split(';')[0]);
 	}
