@@ -38,7 +38,14 @@ function exitHandler(){
 
 /* Public */
 exports.go = function(threadRequestArray){
-	for(var trArrayLen = threadRequestArray.length, ro = null, ref = null, roFinal = {}; i<trArrayLen; i++){
+	var trArrayLen = threadRequestArray.length,
+		ro = null,
+		ref = null,
+		roFinal = {},
+		len = 0,
+		i = 0;
+	/* create proper object depth */
+	for(i = 0; i<trArrayLen; i++){
 		ro = threadRequestArray[i];
 		if(i === 0){
 			roFinal = ref = ro;
@@ -46,14 +53,17 @@ exports.go = function(threadRequestArray){
 			ref = ref.next = ro;
 		};
 	};
-	executeRequest(roFinal);
+
+	/* Execute this process [x] amount of times */
+	for(i=0, len=1; i<len; i++) executeRequest(roFinal);
+
+	/* Recursive function call */
 	function executeRequest(ro){
-		console.log(ro);
 		request(ro, function(e, x, d){
 			var body = '';
 			if(e !== null) throw e;
-			console.log(x.statusCode);
-			if(typeof ro.onRequestEnd === 'function'){
+			console.log(x.statusCode, ro.uri);
+			if(typeof ro.onRequestEnd === 'function'){ // OnRequestEnd
 				ro.onRequestEnd.apply(ro, arguments);
 			};
 			if(typeof ro.next !== 'undefinded' && ro.next !== null){
@@ -63,7 +73,7 @@ exports.go = function(threadRequestArray){
 				} else if(typeof ro.headers.Cookie !== 'undefined'){
 					ro.next.headers.Cookie = ro.headers.Cookie;
 				}
-				if(typeof ro.next.onRequestStart === 'function'){
+				if(typeof ro.next.onRequestStart === 'function'){ // OnRequestStart
 					body = ro.next.onRequestStart.apply(ro.next, arguments);
 					if(body !== null) ro.next.body = body;
 				};
