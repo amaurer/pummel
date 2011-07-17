@@ -99,8 +99,11 @@ function arrayOfRequestObjects(){
 	};
 	ro.onRequestEnd = function(error, xhr, response, roNext){
 		var r = /consumerLeadID[\s]=[\s]"(\d+)"/i;
-		console.log(response.match(r)[1]);
-		roNext.uri += '&leadID=' + response.match(r)[1];
+		var leadMatch = response.match(r);
+		shouldTry(function(){
+			leadMatch.length.should.be.above(0);
+		});
+		roNext.uri += '&leadID=' + leadMatch[1];
 	};
 	roArray.push(ro);
 
@@ -110,7 +113,8 @@ function arrayOfRequestObjects(){
 	ro.onRequestEnd = function(error, xhr, response, roNext){
 		var $page = $('#confirmation', response);
 		shouldTry(function(){
-			$page.length.should.be.above(0);
+			$('#confirmation', response).length.should.be.above(0);
+			$('#search', response).length.should.not.be.above(0);
 		});
 		//var r = /leadID=(\d+)/i;
 		//roNext.uri += '&leadID=' + this.uri.match(r)[1];

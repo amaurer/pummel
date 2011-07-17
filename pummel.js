@@ -59,7 +59,7 @@ exports.go = function(threadRequestArray){
 
 	/* Recursive function call */
 	function executeRequest(ro){
-		var body = '', requestArgs = [];
+		var body = '';
 		if(typeof ro.onRequestStart === 'function'){ // OnRequestStart
 			body = ro.onRequestStart.apply(ro, arguments);
 			if(body !== null) ro.body = body;
@@ -69,9 +69,9 @@ exports.go = function(threadRequestArray){
 			var requestArgs = [];
 			console.log(x.statusCode, ro.uri);
 			if(typeof ro.onRequestEnd === 'function'){ // OnRequestEnd
-				requestArgs.push(e)
-				requestArgs.push(x)
-				requestArgs.push(d)
+				requestArgs.push(e);
+				requestArgs.push(x);
+				requestArgs.push(d);
 				if(hasNext(ro)) requestArgs.push(ro.next);
 				ro.onRequestEnd.apply(ro, requestArgs);
 			};
@@ -81,7 +81,7 @@ exports.go = function(threadRequestArray){
 					ro.next.headers.Cookie = exports.getCookieString(x);
 				} else if(typeof ro.headers.Cookie !== 'undefined'){
 					ro.next.headers.Cookie = ro.headers.Cookie;
-				}
+				};
 				executeRequest(ro.next);
 			};
 		});
