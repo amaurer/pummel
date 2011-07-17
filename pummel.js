@@ -1,9 +1,6 @@
 
 /* Called from console and imported as a module "require" */
 
-
-/* TODO : check cookie setting, fails */
-
 var args = process.argv,
 	argsLen = args.length,
 	spawn = require('child_process').spawn,
@@ -26,10 +23,10 @@ for (i=0; i<len; i++) {
 };
 
 function handler(d){
-	console.log('Data', d.toString());
+	console.log(d.toString());
 };
 function errorHandler(d){
-	console.log('Error', d.toString());
+	console.log('Error! ', d.toString());
 };
 function exitHandler(){
 	console.log('Exit', arguments);
@@ -54,29 +51,37 @@ exports.go = function(threadRequestArray){
 		};
 	};
 
-	/* Execute this process [x] amount of times */
-	for(i=0, len=1; i<len; i++) executeRequest(roFinal);
+	executeRequest(roFinal);
+
+	function hasNext(ro){
+		return (typeof ro.next !== 'undefinded' && ro.next !== null);
+	}
 
 	/* Recursive function call */
 	function executeRequest(ro){
+		var body = '', requestArgs = [];
+		if(typeof ro.onRequestStart === 'function'){ // OnRequestStart
+			body = ro.onRequestStart.apply(ro, arguments);
+			if(body !== null) ro.body = body;
+		};
 		request(ro, function(e, x, d){
-			var body = '';
 			if(e !== null) throw e;
+			var requestArgs = [];
 			console.log(x.statusCode, ro.uri);
 			if(typeof ro.onRequestEnd === 'function'){ // OnRequestEnd
-				ro.onRequestEnd.apply(ro, arguments);
+				requestArgs.push(e)
+				requestArgs.push(x)
+				requestArgs.push(d)
+				if(hasNext(ro)) requestArgs.push(ro.next);
+				ro.onRequestEnd.apply(ro, requestArgs);
 			};
-			if(typeof ro.next !== 'undefinded' && ro.next !== null){
+			if(hasNext(ro)){
 				/* Prep Cookie */
 				if(typeof x.headers['set-cookie'] !== 'undefined'){
 					ro.next.headers.Cookie = exports.getCookieString(x);
 				} else if(typeof ro.headers.Cookie !== 'undefined'){
 					ro.next.headers.Cookie = ro.headers.Cookie;
 				}
-				if(typeof ro.next.onRequestStart === 'function'){ // OnRequestStart
-					body = ro.next.onRequestStart.apply(ro.next, arguments);
-					if(body !== null) ro.next.body = body;
-				};
 				executeRequest(ro.next);
 			};
 		});

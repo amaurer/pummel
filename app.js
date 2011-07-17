@@ -4,113 +4,130 @@ var pummel = require('./pummel'),
 	$ = require('jquery'),
 	should = require('should');
 
-var domain = 'http://demo.oemlr.com/',
-	roArray = [],
-	ro = null;
-
-
-/* First */
-ro = new pummel.RequestObject();
-ro.uri = domain;
-roArray.push(ro);
-
-
-/* Second */
-ro = new pummel.RequestObject();
-ro.uri = domain + 'select/?tireSize=205/55R16';
-roArray.push(ro);
-
-/* Third */
-ro = new pummel.RequestObject();
-ro.uri = domain + '?resource=selectProductSubmissionRequest';
-ro.method = 'POST';
-ro.onRequestStart = function(error, xhr, response){
-	var $products = $('.resultRow', response);
-
-	$products.should.be.a('object');
-	/* TODO  : Write parsing logic to get random? proudct from results */
-
-	return selectProductSubmissionRequest();
-};
-roArray.push(ro);
-
-/* Fourth */
-ro = new pummel.RequestObject();
-ro.uri = domain + 'dealership/?tireSize=205/55R16';
-roArray.push(ro);
-
-/* Fifth */
-ro = new pummel.RequestObject();
-ro.uri = domain + '?resource=selectedLocationSubmissionRequest';
-ro.method = 'POST';
-ro.onRequestStart = function(error, xhr, response){
-
-	return selectedLocationSubmissionRequest();
-};
-ro.onRequestEnd = function(error, xhr, response){
-	//console.log(response);
-};
-roArray.push(ro);
-
-/* Sixth */
-ro = new pummel.RequestObject();
-ro.uri = domain + 'schedule/?tireSize=205/55R16';
-ro.onRequestStart = function(error, xhr, response){
-	//console.log(this);
-	return null;
-};
-ro.onRequestEnd = function(error, xhr, response){
-	//console.log(response);
-};
-roArray.push(ro);
-
-/* Seventh */
-ro = new pummel.RequestObject();
-ro.uri = domain + '?resource=consumerLeadSubmissionRequest';
-ro.method = 'POST';
-ro.onRequestStart = function(error, xhr, response){
-	return consumerLeadSubmissionRequest();
-};
-ro.onRequestEnd = function(error, xhr, response){
-	//console.log(response);
-};
-roArray.push(ro);
-
-/* Eigth */
-ro = new pummel.RequestObject();
-ro.uri = domain + 'confirmation/?tireSize=205/55R16';
-ro.onRequestStart = function(error, xhr, response){
-	var r = /consumerLeadID[\s]=[\s]"(\d+)"/i;
-	//var d = /[\d+]/;
-	//console.log(response.match(r))
-	//console.log(response.match(d));
-	this.uri += '&leadID=' + response.match(r)[1];
-	return null;
-};
-ro.onRequestEnd = function(error, xhr, response){
-	var r = /leadID=(\d+)/i;
-	var leadID = this.uri.match(r)[1];
-	this.next.leadID = leadID;
-	this.next.uri += '&leadID=' + leadID;
-};
-roArray.push(ro);
-
-/* Ninth */
-ro = new pummel.RequestObject();
-ro.uri = domain + '?resource=confirmAppointmentSubmissionRequest';
-ro.method = 'POST';
-ro.onRequestStart = function(error, xhr, response){
-	return confirmAppointmentSubmissionRequest(this.leadID);
-};
-ro.onRequestEnd = function(error, xhr, response){
-	//console.log(response);
-};
-roArray.push(ro);
-
 
 /* Send Requests */
-pummel.go(roArray);
+for(var i=0, len=1; i<len; i++) pummel.go(arrayOfRequestObjects());
 
+
+function shouldTry(fn){
+	try{
+		fn();
+	} catch (e) {
+		console.log(e.message);
+	}
+}
+
+function arrayOfRequestObjects(){
+	
+	var domain = 'http://demo.oemlr.com/',
+		roArray = [],
+		ro = null;
+
+	/* First */
+	ro = new pummel.RequestObject();
+	ro.uri = domain;
+	roArray.push(ro);
+
+	/* Second */
+	ro = new pummel.RequestObject();
+	ro.uri = domain + 'select/?tireSize=205/55R16';
+	ro.onRequestEnd = function(error, xhr, response, roNext){
+		var $products = $('.result_item', response);
+
+		shouldTry(function(){
+			$products.length.should.be.above(0);
+		});
+	};
+	roArray.push(ro);
+
+	/* Third */
+	ro = new pummel.RequestObject();
+	ro.uri = domain + '?resource=selectProductSubmissionRequest';
+	ro.method = 'POST';
+	ro.onRequestStart = function(error, xhr, response){
+		/* TODO  : Write parsing logic to get random? proudct from results */
+		return selectProductSubmissionRequest();
+	};
+	roArray.push(ro);
+
+	/* Fourth */
+	ro = new pummel.RequestObject();
+	ro.uri = domain + 'dealership/?tireSize=205/55R16';
+	ro.onRequestEnd = function(error, xhr, response, roNext){
+		var $page = $('#dealership', response);
+		shouldTry(function(){
+			$page.length.should.be.above(0);
+		});
+	};
+	roArray.push(ro);
+
+	/* Fifth */
+	ro = new pummel.RequestObject();
+	ro.uri = domain + '?resource=selectedLocationSubmissionRequest';
+	ro.method = 'POST';
+	ro.onRequestStart = function(error, xhr, response){
+		return selectedLocationSubmissionRequest();
+	};
+	ro.onRequestEnd = function(error, xhr, response, roNext){
+		/*
+		var $products = $('.result_item', response);
+
+		shouldTry(function(){
+			$products.length.should.be.above(0);
+		});
+		*/
+	};
+	roArray.push(ro);
+
+	/* Sixth */
+	ro = new pummel.RequestObject();
+	ro.uri = domain + 'schedule/?tireSize=205/55R16';
+	ro.onRequestEnd = function(error, xhr, response, roNext){
+		var $page = $('#schedule', response);
+		shouldTry(function(){
+			$page.length.should.be.above(0);
+		});
+	};
+	roArray.push(ro);
+
+	/* Seventh */
+	ro = new pummel.RequestObject();
+	ro.uri = domain + '?resource=consumerLeadSubmissionRequest';
+	ro.method = 'POST';
+	ro.onRequestStart = function(error, xhr, response){
+		return consumerLeadSubmissionRequest();
+	};
+	ro.onRequestEnd = function(error, xhr, response, roNext){
+		var r = /consumerLeadID[\s]=[\s]"(\d+)"/i;
+		console.log(response.match(r)[1]);
+		roNext.uri += '&leadID=' + response.match(r)[1];
+	};
+	roArray.push(ro);
+
+	/* Eighth */
+	ro = new pummel.RequestObject();
+	ro.uri = domain + 'confirmation/?tireSize=205/55R16';
+	ro.onRequestEnd = function(error, xhr, response, roNext){
+		var $page = $('#confirmation', response);
+		shouldTry(function(){
+			$page.length.should.be.above(0);
+		});
+		//var r = /leadID=(\d+)/i;
+		//roNext.uri += '&leadID=' + this.uri.match(r)[1];
+	};
+	roArray.push(ro);
+
+	/* Ninth */
+	ro = new pummel.RequestObject();
+	ro.uri = domain + '?resource=confirmAppointmentSubmissionRequest';
+	ro.method = 'POST';
+	ro.onRequestStart = function(error, xhr, response){
+		return confirmAppointmentSubmissionRequest(this.leadID);
+	};
+	// SKIP THIS FOR NOW roArray.push(ro);
+
+	return roArray;
+}
 
 function selectProductSubmissionRequest() {
 	var xml = '<productAttributes>';
